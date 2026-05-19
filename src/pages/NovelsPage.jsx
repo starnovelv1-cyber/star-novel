@@ -29,8 +29,7 @@ export default function NovelsPage() {
     setLoading(false)
   }
 
-  const novelsWithAudio = novels.filter(novel => novel.has_audio || novel.audio_url)
-
+  const novelsWithAudio = novels.filter(novel => novel.has_audio === true)
   const filtered = (tab === 'audio' ? novelsWithAudio : novels).filter(novel => {
     const matchSearch = search === '' ||
       novel.title?.toLowerCase().includes(search.toLowerCase()) ||
