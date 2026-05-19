@@ -29,6 +29,8 @@ export default function NovelsPage() {
         .order('created_at', { ascending: false }),
       supabase.from('categories').select('*').order('name'),
     ])
+    console.log('novels data:', n.data)
+    console.log('novels error:', n.error)
     setNovels(n.data || [])
     setCategories(c.data || [])
     setLoading(false)
