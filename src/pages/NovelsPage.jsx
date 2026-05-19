@@ -14,6 +14,11 @@ export default function NovelsPage() {
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '')
   const [selectedStatus, setSelectedStatus] = useState('')
 
+  // sync tab กับ URL เมื่อ URL เปลี่ยน
+  useEffect(() => {
+    setTab(searchParams.get('tab') === 'audio' ? 'audio' : 'all')
+  }, [searchParams])
+
   useEffect(() => { loadData() }, [])
 
   async function loadData() {
@@ -29,7 +34,8 @@ export default function NovelsPage() {
     setLoading(false)
   }
 
-  const novelsWithAudio = novels.filter(novel => novel.has_audio === true)
+  const novelsWithAudio = novels.filter(novel => novel.has_audio || novel.audio_url)
+
   const filtered = (tab === 'audio' ? novelsWithAudio : novels).filter(novel => {
     const matchSearch = search === '' ||
       novel.title?.toLowerCase().includes(search.toLowerCase()) ||
@@ -145,7 +151,7 @@ export default function NovelsPage() {
                       }}>
                         {novel.status === 'completed' ? 'จบ' : 'ดำเนิน'}
                       </span>
-                      {(novel.has_audio || novel.audio_url) && (
+                      {novel.has_audio && (
                         <span style={{
                           position: 'absolute', top: '6px', left: '6px',
                           background: '#2d1b69', color: '#a78bfa',
