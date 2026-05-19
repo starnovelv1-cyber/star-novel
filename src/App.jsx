@@ -1,5 +1,4 @@
 import NovelsPage      from './pages/NovelsPage'
-import AudioNovelsPage from './pages/AudioNovelsPage'
 import CategoriesPage  from './pages/CategoriesPage'
 import RankingPage     from './pages/RankingPage'
 import AuthorsPage     from './pages/AuthorsPage'
@@ -115,7 +114,7 @@ export default function App() {
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/novels"       element={<NovelsPage />} />
-      <Route path="/audio-novels" element={<AudioNovelsPage />} />
+      <Route path="/audio-novels" element={<Navigate to="/novels?tab=audio" replace />} />
       <Route path="/categories"   element={<CategoriesPage />} />
       <Route path="/ranking"      element={<RankingPage />} />
       <Route path="/authors"      element={<AuthorsPage />} /> 
