@@ -13,7 +13,7 @@ export default function NovelsPage() {
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '')
   const [selectedStatus, setSelectedStatus] = useState('')
-  const [tab, setTab] = useState('all') // all | audio
+  const [tab, setTab] = useState(searchParams.get('tab') === 'audio' ? 'audio' : 'all')
 
   useEffect(() => { loadData() }, [])
 
@@ -47,7 +47,15 @@ export default function NovelsPage() {
       <Navbar />
       <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#fff', padding: '100px 1rem 2rem' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-
+             {/* ปุ่มย้อนกลับ */}
+            <button onClick={() => navigate(-1)} style={{
+             marginBottom: '1rem', background: 'none',
+            border: '1px solid #333', color: '#aaa',
+            padding: '6px 16px', borderRadius: '20px',
+             cursor: 'pointer', fontSize: '13px'
+            }}>
+            ← ย้อนกลับ
+           </button>
           {/* Header */}
           <div style={{ marginBottom: '2rem' }}>
             <h1 style={{ fontSize: '2rem', fontWeight: 700, color: '#fff', marginBottom: 8 }}>
