@@ -25,7 +25,7 @@ export default function NovelsPage() {
     setLoading(true)
     const [n, c] = await Promise.all([
       supabase.from('novels')
-        .select('*, categories(name), writers(pen_name)')
+        .select('*, has_audio, categories(name), writers(pen_name)')
         .order('created_at', { ascending: false }),
       supabase.from('categories').select('*').order('name'),
     ])
