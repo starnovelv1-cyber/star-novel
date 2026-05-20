@@ -9,7 +9,11 @@ export default function AnnouncementBanner() {
       .select('*')
       .eq('is_active', true)
       .order('created_at', { ascending: false })
-      .then(({ data }) => setAnnouncements(data || []))
+      .then(({ data }) => {
+        setAnnouncements(data || [])
+        const h = (data?.length || 0) * 40
+        document.documentElement.style.setProperty('--banner-height', `${h}px`)
+      })
   }, [])
 
   if (announcements.length === 0) return null
@@ -21,7 +25,7 @@ export default function AnnouncementBanner() {
   }
 
   return (
-    <div style={{ position: 'relative', top: 0, left: 0, right: 0, zIndex: 9999 }}>
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999 }}>
       {announcements.map(a => {
         const c = colors[a.type] || colors.info
         return (
@@ -37,4 +41,3 @@ export default function AnnouncementBanner() {
     </div>
   )
 }
-
