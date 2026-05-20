@@ -21,7 +21,7 @@ export default function AnnouncementBanner() {
   }
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999 }}>
+    <div style={{ position: 'relative', top: 0, left: 0, right: 0, zIndex: 9999 }}>
       {announcements.map(a => {
         const c = colors[a.type] || colors.info
         return (
@@ -37,3 +37,4 @@ export default function AnnouncementBanner() {
     </div>
   )
 }
+
