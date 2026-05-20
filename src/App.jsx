@@ -153,8 +153,8 @@ export default function App() {
           <Route path="comments" element={<CommentsAdmin />} />
           <Route path="duplicate-check" element={<DuplicateCheckAdmin />} />
           <Route path="announcements" element={<AnnouncementsAdmin />} />
+          <Route path="reports" element={<ReportsAdmin />} />
         </Route>
-
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </>
