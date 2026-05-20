@@ -11,6 +11,7 @@ const menuItems = [
   { path: '/admin/comments', label: 'ความคิดเห็น', icon: '💬' },
   { path: '/admin/duplicate-check', label: 'ตรวจงานซ้ำ', icon: '🛡️' },
   { path: '/admin/announcements', label: 'ประกาศ', icon: '📢' },
+  { path: '/admin/reports', label: 'รายงานปัญหา', icon: '🐛' },
 ]
 
 export default function AdminLayout() {
