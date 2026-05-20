@@ -29,7 +29,9 @@ import CategoriesAdmin from './pages/admin/CategoriesAdmin'
 import CommentsAdmin from './pages/admin/CommentsAdmin'
 import DuplicateCheckAdmin from './pages/admin/DuplicateCheckAdmin'
 import AnnouncementsAdmin from './pages/admin/AnnouncementsAdmin'
+import ReportsAdmin from './pages/admin/ReportsAdmin'
 import AnnouncementBanner from './components/AnnouncementBanner'
+import ReportButton from './components/ReportButton'
 
 function Home() {
   return (
@@ -111,6 +113,7 @@ export default function App() {
   return (
     <>
       <AnnouncementBanner />
+      <ReportButton />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/novel/:id" element={<NovelPage />} />
