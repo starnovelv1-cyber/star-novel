@@ -28,6 +28,8 @@ import UsersAdmin from './pages/admin/UsersAdmin'
 import CategoriesAdmin from './pages/admin/CategoriesAdmin'
 import CommentsAdmin from './pages/admin/CommentsAdmin'
 import DuplicateCheckAdmin from './pages/admin/DuplicateCheckAdmin'
+import AnnouncementsAdmin from './pages/admin/AnnouncementsAdmin'
+import AnnouncementBanner from './components/AnnouncementBanner'
 
 function Home() {
   return (
@@ -107,50 +109,54 @@ export default function App() {
   if (loading) return null
 
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/novel/:id" element={<NovelPage />} />
-      <Route path="/search" element={<NovelPage />} />
-      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-      <Route path="/reset-password" element={<ResetPasswordPage />} />
-      <Route path="/novels"       element={<NovelsPage />} />
-      <Route path="/audio-novels" element={<Navigate to="/novels?tab=audio" replace />} />
-      <Route path="/categories"   element={<CategoriesPage />} />
-      <Route path="/ranking"      element={<RankingPage />} />
-      <Route path="/authors"      element={<AuthorsPage />} /> 
-      <Route path="/profile" element={
-        user ? <ProfilePage /> : <Navigate to="/login" replace />
-      } />
-      <Route path="/coin" element={
-        user ? <CoinPage /> : <Navigate to="/login" replace />
-      } />
-      <Route path="/coins" element={
-        user ? <CoinPage /> : <Navigate to="/login" replace />
-      } />
-      <Route path="/login" element={
-        user ? <Navigate to="/" replace /> : <LoginPage />
-      } />
+    <>
+      <AnnouncementBanner />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/novel/:id" element={<NovelPage />} />
+        <Route path="/search" element={<NovelPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/novels"       element={<NovelsPage />} />
+        <Route path="/audio-novels" element={<Navigate to="/novels?tab=audio" replace />} />
+        <Route path="/categories"   element={<CategoriesPage />} />
+        <Route path="/ranking"      element={<RankingPage />} />
+        <Route path="/authors"      element={<AuthorsPage />} />
+        <Route path="/profile" element={
+          user ? <ProfilePage /> : <Navigate to="/login" replace />
+        } />
+        <Route path="/coin" element={
+          user ? <CoinPage /> : <Navigate to="/login" replace />
+        } />
+        <Route path="/coins" element={
+          user ? <CoinPage /> : <Navigate to="/login" replace />
+        } />
+        <Route path="/login" element={
+          user ? <Navigate to="/" replace /> : <LoginPage />
+        } />
 
-      <Route path="/admin" element={
-        !user
-          ? <Navigate to="/login" replace />
-          : role === null
-          ? null
-          : role !== 'owner'
-          ? <Navigate to="/" replace />
-          : <AdminLayout />
-      }>
-        <Route index element={<DashboardPage />} />
-        <Route path="novels" element={<NovelsAdmin />} />
-        <Route path="chapters" element={<ChaptersAdmin />} />
-        <Route path="writers" element={<WritersAdmin />} />
-        <Route path="users" element={<UsersAdmin />} />
-        <Route path="categories" element={<CategoriesAdmin />} />
-        <Route path="comments" element={<CommentsAdmin />} />
-        <Route path="duplicate-check" element={<DuplicateCheckAdmin />} />
-      </Route>
+        <Route path="/admin" element={
+          !user
+            ? <Navigate to="/login" replace />
+            : role === null
+            ? null
+            : role !== 'owner'
+            ? <Navigate to="/" replace />
+            : <AdminLayout />
+        }>
+          <Route index element={<DashboardPage />} />
+          <Route path="novels" element={<NovelsAdmin />} />
+          <Route path="chapters" element={<ChaptersAdmin />} />
+          <Route path="writers" element={<WritersAdmin />} />
+          <Route path="users" element={<UsersAdmin />} />
+          <Route path="categories" element={<CategoriesAdmin />} />
+          <Route path="comments" element={<CommentsAdmin />} />
+          <Route path="duplicate-check" element={<DuplicateCheckAdmin />} />
+          <Route path="announcements" element={<AnnouncementsAdmin />} />
+        </Route>
 
-      <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </>
   )
 }
