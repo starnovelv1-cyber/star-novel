@@ -1,19 +1,24 @@
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
-import { Upload } from 'tus-js-client'
+
+const R2_BUCKET = 'star-novel-audio'
+const R2_ACCOUNT_ID = 'f2fc439ae103dece7028455c9733db1d'
+const R2_ACCESS_KEY_ID = 'e1c1d5fc3bd76d68b23b2dc7463e997d'
+const R2_SECRET_ACCESS_KEY = '081460b8ca2dc3ddf6b2e4fa8f5f1e7350c1d0f3b10c4430b58200695b66de21'
+const R2_PUBLIC_URL = 'https://pub-7e8fb90f9cd14ce9aacbd25e34571a05.r2.dev'
 
 export default function ChaptersAdmin() {
   const [chapters, setChapters] = useState([])
   const [novels, setNovels] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [selectedNovel, setSelectedNovel] = useState('')   // '' = ทุกนิยาย
+  const [selectedNovel, setSelectedNovel] = useState('')
   const [audioFile, setAudioFile] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [editId, setEditId] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
-  const [openPlaylists, setOpenPlaylists] = useState({})   // novelId → true/false
+  const [openPlaylists, setOpenPlaylists] = useState({})
   const [form, setForm] = useState({
     novel_id: '', chapter_number: '', title: '', content: '',
     audio_url: '', is_free: true, coin_price: 0
@@ -36,7 +41,6 @@ export default function ChaptersAdmin() {
       ])
       setChapters(c.data || [])
       setNovels(n.data || [])
-      // เปิด playlist แรกให้อัตโนมัติ
       if (n.data?.length > 0) {
         setOpenPlaylists({ [String(n.data[0].id)]: true })
       }
@@ -47,7 +51,6 @@ export default function ChaptersAdmin() {
     }
   }
 
-  // ✅ แก้หลัก: compare ด้วย String() ทั้งคู่
   function sameNovel(a, b) {
     return String(a) === String(b)
   }
@@ -56,7 +59,6 @@ export default function ChaptersAdmin() {
     setOpenPlaylists(prev => ({ ...prev, [String(novelId)]: !prev[String(novelId)] }))
   }
 
-  // จัดกลุ่มตอนตามนิยาย
   const grouped = novels
     .map(novel => ({
       novel,
@@ -69,44 +71,82 @@ export default function ChaptersAdmin() {
       return sameNovel(g.novel.id, selectedNovel)
     })
 
+  // ✅ อัปโหลดไป Cloudflare R2 แทน Supabase
   async function uploadAudio(novelId, chapterNumber) {
     if (!audioFile) return null
     setUploading(true)
     setUploadProgress(0)
-    const SUPABASE_URL = 'https://lsjphxrlnqxasligrzae.supabase.co'
-    const { data: sessionData } = await supabase.auth.getSession()
-    const token = sessionData?.session?.access_token
-    const ext = audioFile.name.split('.').pop().toLowerCase()
-    const path = `novels/${novelId}/chapter_${chapterNumber}_${Date.now()}.${ext}`
-    return new Promise((resolve) => {
-      const upload = new Upload(audioFile, {
-        endpoint: `${SUPABASE_URL}/storage/v1/upload/resumable`,
-        retryDelays: [0, 3000, 5000, 10000],
-        headers: { authorization: `Bearer ${token}`, 'x-upsert': 'true' },
-        uploadDataDuringCreation: true,
-        removeFingerprintOnSuccess: true,
-        metadata: {
-          bucketName: 'audio', objectName: path,
-          contentType: audioFile.type || 'audio/mpeg', cacheControl: '3600',
-        },
-        chunkSize: 6 * 1024 * 1024,
-        onError: (err) => {
-          alert('อัปโหลดเสียงล้มเหลว: ' + err.message)
-          setUploading(false); setUploadProgress(0); resolve(null)
-        },
-        onProgress: (bytesUploaded, bytesTotal) => {
-          setUploadProgress(Math.round((bytesUploaded / bytesTotal) * 100))
-        },
-        onSuccess: () => {
-          const { data: urlData } = supabase.storage.from('audio').getPublicUrl(path)
-          setUploading(false); setUploadProgress(100); resolve(urlData.publicUrl)
-        },
+
+    try {
+      const ext = audioFile.name.split('.').pop().toLowerCase()
+      const path = `novels/${novelId}/chapter_${chapterNumber}_${Date.now()}.${ext}`
+
+      // สร้าง signature สำหรับ R2 (S3-compatible)
+      const endpoint = `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${R2_BUCKET}/${path}`
+
+      // ใช้ fetch อัปโหลดตรงไป R2
+      const xhr = new XMLHttpRequest()
+      
+      await new Promise((resolve, reject) => {
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) {
+            setUploadProgress(Math.round((e.loaded / e.total) * 100))
+          }
+        }
+        xhr.onload = () => {
+          if (xhr.status === 200 || xhr.status === 204) resolve()
+          else reject(new Error(`Upload failed: ${xhr.status}`))
+        }
+        xhr.onerror = () => reject(new Error('Network error'))
+        
+        // ใช้ presigned URL approach ผ่าน worker หรืออัปโหลดผ่าน AWS SDK
+        // วิธีง่ายที่สุด: ใช้ fetch กับ AWS Signature V4
+        reject(new Error('USE_ALTERNATIVE'))
       })
-      upload.findPreviousUploads().then((prev) => {
-        if (prev.length) upload.resumeFromPreviousUpload(prev[0])
-        upload.start()
+    } catch (err) {
+      if (err.message === 'USE_ALTERNATIVE') {
+        // ใช้วิธี import aws4fetch
+        return await uploadViaAwsFetch(novelId, chapterNumber)
+      }
+      alert('อัปโหลดเสียงล้มเหลว: ' + err.message)
+      setUploading(false)
+      setUploadProgress(0)
+      return null
+    }
+  }
+
+  async function uploadViaAwsFetch(novelId, chapterNumber) {
+    try {
+      const { AwsClient } = await import('aws4fetch')
+      
+      const aws = new AwsClient({
+        accessKeyId: R2_ACCESS_KEY_ID,
+        secretAccessKey: R2_SECRET_ACCESS_KEY,
+        region: 'auto',
+        service: 's3',
       })
-    })
+
+      const ext = audioFile.name.split('.').pop().toLowerCase()
+      const path = `novels/${novelId}/chapter_${chapterNumber}_${Date.now()}.${ext}`
+      const url = `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${R2_BUCKET}/${path}`
+
+      const response = await aws.fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': audioFile.type || 'audio/mpeg' },
+        body: audioFile,
+      })
+
+      if (!response.ok) throw new Error(`Upload failed: ${response.status}`)
+
+      setUploading(false)
+      setUploadProgress(100)
+      return `${R2_PUBLIC_URL}/${path}`
+    } catch (err) {
+      alert('อัปโหลดเสียงล้มเหลว: ' + err.message)
+      setUploading(false)
+      setUploadProgress(0)
+      return null
+    }
   }
 
   function handleEdit(ch) {
@@ -156,7 +196,6 @@ export default function ChaptersAdmin() {
     setDeleteTarget(null)
   }
 
-  // Drag & drop (ใช้ได้เฉพาะเมื่อกรองนิยายเดียว)
   function handleDragStart(index) { dragItem.current = index }
   function handleDragEnter(index) {
     if (!selectedNovel || dragItem.current === index) return
@@ -187,7 +226,6 @@ export default function ChaptersAdmin() {
 
   return (
     <div>
-      {/* Custom Confirm Modal */}
       {deleteTarget && (
         <div style={{
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
@@ -204,7 +242,6 @@ export default function ChaptersAdmin() {
         </div>
       )}
 
-      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
         <h1 style={{ color: '#fff' }}>🎙️ จัดการตอน / เสียง</h1>
         <button onClick={() => { resetForm(); setShowForm(true) }}
@@ -213,7 +250,6 @@ export default function ChaptersAdmin() {
         </button>
       </div>
 
-      {/* Filter */}
       <div style={{ marginBottom: '1.5rem' }}>
         <select value={selectedNovel} onChange={e => setSelectedNovel(e.target.value)}
           style={{ ...inputStyle, width: '280px' }}>
@@ -222,7 +258,6 @@ export default function ChaptersAdmin() {
         </select>
       </div>
 
-      {/* Form */}
       {showForm && (
         <div style={{ background: '#1a1a1a', border: `1px solid ${editId ? '#3b82f6' : '#333'}`, borderRadius: '12px', padding: '1.5rem', marginBottom: '1.5rem' }}>
           <h3 style={{ color: editId ? '#60a5fa' : '#FFD700', marginBottom: '1rem', fontSize: '16px' }}>
@@ -241,7 +276,7 @@ export default function ChaptersAdmin() {
               style={{ ...inputStyle, gridColumn: '1/-1' }} />
             <div style={{ gridColumn: '1/-1' }}>
               <label style={{ color: '#aaa', fontSize: '13px', display: 'block', marginBottom: '6px' }}>
-                🎵 ไฟล์เสียง {editId && form.audio_url && <span style={{ color: '#34d399' }}>(มีไฟล์อยู่แล้ว)</span>}
+                🎵 ไฟล์เสียง (อัปโหลดไป Cloudflare R2) {editId && form.audio_url && <span style={{ color: '#34d399' }}>(มีไฟล์อยู่แล้ว)</span>}
               </label>
               <input type="file" accept="audio/*,video/mp4,video/x-matroska,video/avi,video/quicktime"
                 onChange={e => setAudioFile(e.target.files[0] || null)}
@@ -272,7 +307,7 @@ export default function ChaptersAdmin() {
           {uploading && (
             <div style={{ marginTop: '12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', color: '#aaa', fontSize: '13px', marginBottom: '4px' }}>
-                <span>⏫ กำลังอัปโหลด...</span><span>{uploadProgress}%</span>
+                <span>⏫ กำลังอัปโหลดไป Cloudflare R2...</span><span>{uploadProgress}%</span>
               </div>
               <div style={{ background: '#333', borderRadius: '8px', height: '10px', overflow: 'hidden' }}>
                 <div style={{ background: '#3b82f6', height: '100%', width: `${uploadProgress}%`, borderRadius: '8px', transition: 'width 0.3s ease' }} />
@@ -290,7 +325,6 @@ export default function ChaptersAdmin() {
         </div>
       )}
 
-      {/* ✅ Playlist Accordion */}
       {loading ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#888', padding: '2rem' }}>
           <div style={{ width: '18px', height: '18px', borderRadius: '50%', border: '2px solid #444', borderTopColor: '#4fc3f7', animation: 'spin 0.8s linear infinite' }} />
@@ -309,7 +343,6 @@ export default function ChaptersAdmin() {
 
             return (
               <div key={novel.id} style={{ background: '#111', border: '1px solid #2a2a2a', borderRadius: '12px', overflow: 'hidden' }}>
-                {/* Playlist Header */}
                 <div
                   onClick={() => togglePlaylist(novel.id)}
                   style={{
@@ -365,7 +398,6 @@ export default function ChaptersAdmin() {
                   </div>
                 </div>
 
-                {/* Chapter Rows */}
                 {isOpen && (
                   <div>
                     {selectedNovel && sameNovel(selectedNovel, novel.id) && (
