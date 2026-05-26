@@ -19,6 +19,7 @@ import Footer from './components/Footer'
 import NovelPage from './pages/NovelPage'
 import ProfilePage from './pages/ProfilePage'
 import CoinPage from './pages/CoinPage'
+import PolicyPage from './pages/PolicyPage'
 import AdminLayout from './pages/admin/AdminLayout'
 import DashboardPage from './pages/admin/DashboardPage'
 import NovelsAdmin from './pages/admin/NovelsAdmin'
@@ -125,6 +126,7 @@ export default function App() {
         <Route path="/categories"   element={<CategoriesPage />} />
         <Route path="/ranking"      element={<RankingPage />} />
         <Route path="/authors"      element={<AuthorsPage />} />
+        <Route path="/policy"       element={<PolicyPage />} />
         <Route path="/profile" element={
           user ? <ProfilePage /> : <Navigate to="/login" replace />
         } />
