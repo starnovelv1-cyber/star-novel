@@ -13,14 +13,6 @@ const COIN_PACKAGES = [
   { coins: 1000, price: 249, label: '1,000 เหรียญ', bonusCoins: 150, tag: '👑 สุดคุ้ม',  tagColor: '#f59e0b' },
 ]
 
-const OMISE_PUBLIC_KEY = import.meta.env.VITE_OMISE_PUBLIC_KEY
-
-const inputStyle = {
-  width: '100%', boxSizing: 'border-box',
-  background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)',
-  borderRadius: '8px', padding: '12px 14px', color: '#fff', fontSize: '1rem', marginBottom: '0.8rem', outline: 'none',
-}
-
 export default function CoinPage() {
   useSEO({ title: 'เติมเหรียญ' })
   const navigate = useNavigate()
@@ -28,36 +20,17 @@ export default function CoinPage() {
   const [userCoins, setUserCoins] = useState(0)
   const [selectedPackage, setSelectedPackage] = useState(null)
   const [loading, setLoading] = useState(false)
-  const [omiseReady, setOmiseReady] = useState(false)
   const [msg, setMsg] = useState('')
-  const [paymentMethod, setPaymentMethod] = useState('card')
-  const [cardNumber, setCardNumber] = useState('')
-  const [expiry, setExpiry] = useState('')
-  const [cvv, setCvv] = useState('')
-  const [name, setName] = useState('')
-  const [phoneNumber, setPhoneNumber] = useState('')
   const [qrCodeUrl, setQrCodeUrl] = useState(null)
   const [chargeId, setChargeId] = useState(null)
   const [polling, setPolling] = useState(false)
   const pollingRef = useRef(null)
 
   useEffect(() => {
-    if (!OMISE_PUBLIC_KEY) { setMsg('❌ ตั้งค่า payment ไม่ถูกต้อง'); return }
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
       if (session?.user) loadCoins(session.user.id)
     })
-    const loadOmise = () => {
-      if (!window.Omise) return
-      window.Omise.setPublicKey(OMISE_PUBLIC_KEY)
-      setOmiseReady(true)
-    }
-    if (window.Omise) { loadOmise() } else {
-      const script = document.createElement('script')
-      script.src = 'https://cdn.omise.co/omise.js'
-      script.onload = loadOmise
-      document.head.appendChild(script)
-    }
     return () => { if (pollingRef.current) clearInterval(pollingRef.current) }
   }, [])
 
@@ -68,8 +41,7 @@ export default function CoinPage() {
 
   function resetForm() {
     setSelectedPackage(null)
-    setCardNumber(''); setExpiry(''); setCvv(''); setName('')
-    setPhoneNumber(''); setQrCodeUrl(null); setChargeId(null)
+    setQrCodeUrl(null); setChargeId(null)
     setPolling(false)
     if (pollingRef.current) clearInterval(pollingRef.current)
   }
@@ -93,41 +65,36 @@ export default function CoinPage() {
     const amount = selectedPackage.price * 100
     setLoading(true); setMsg('')
     try {
-      if (paymentMethod === 'card') {
-        if (!cardNumber || !expiry || !cvv || !name) { setMsg('❌ กรอกข้อมูลบัตรไม่ครบ'); setLoading(false); return }
-        if (!omiseReady) return setMsg('❌ ระบบยังไม่พร้อม')
-        const [month, year] = expiry.split('/')
-        const token = await new Promise((resolve, reject) => {
-          window.Omise.createToken('card', { name, number: cardNumber.replace(/\s/g, ''), expiration_month: month, expiration_year: '20' + year, security_code: cvv },
-            (statusCode, response) => { if (statusCode === 200) resolve(response.id); else reject(response.message || 'สร้าง token ไม่สำเร็จ') })
-        })
-        const res = await fetch('/api/create-charge', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount, token, userId: user.id, coins: totalCoins, paymentMethod: 'card' }) })
-        const data = await res.json()
-        if (data.success && data.paid) { setMsg('✅ ชำระเงินสำเร็จ! 🎉'); loadCoins(user.id); resetForm() }
-        else setMsg('❌ ' + (data.error || 'Payment failed'))
-      } else if (paymentMethod === 'promptpay') {
-        const res = await fetch('/api/create-charge', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount, userId: user.id, coins: totalCoins, paymentMethod: 'promptpay' }) })
-        const data = await res.json()
-        if (data.success && data.chargeId) { setQrCodeUrl(data.qrCodeUrl); setChargeId(data.chargeId); setMsg('📱 สแกน QR Code เพื่อชำระเงิน'); startPolling(data.chargeId, totalCoins, amount) }
-        else setMsg('❌ ' + (data.error || 'ไม่สามารถสร้าง QR Code ได้'))
-      } else if (paymentMethod === 'truemoney') {
-        if (!phoneNumber || phoneNumber.length < 10) { setMsg('❌ กรอกเบอร์โทรให้ถูกต้อง'); setLoading(false); return }
-        const res = await fetch('/api/create-charge', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount, userId: user.id, coins: totalCoins, paymentMethod: 'truemoney', phoneNumber }) })
-        const data = await res.json()
-        if (data.success && data.chargeId) { setChargeId(data.chargeId); setMsg('📲 กรุณาเปิดแอป TrueMoney Wallet แล้วกด "ยืนยัน"'); startPolling(data.chargeId, totalCoins, amount); if (data.authorizeUri) window.open(data.authorizeUri, '_blank', 'width=500,height=700') }
-        else setMsg('❌ ' + (data.error || 'ไม่สามารถดำเนินการได้'))
+      const res = await fetch('/api/create-charge', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount, userId: user.id, coins: totalCoins, paymentMethod: 'promptpay' }) })
+      const data = await res.json()
+      if (data.success && data.chargeId) {
+        setQrCodeUrl(data.qrCodeUrl)
+        setChargeId(data.chargeId)
+        setMsg('📱 สแกน QR Code เพื่อชำระเงิน')
+        startPolling(data.chargeId, totalCoins, amount)
+      } else {
+        setMsg('❌ ' + (data.error || 'ไม่สามารถสร้าง QR Code ได้'))
       }
     } catch (err) { console.error(err); setMsg('❌ ' + err) }
     setLoading(false)
   }
 
-  const methodBtnStyle = (active) => ({
-    flex: 1, padding: '10px',
-    background: active ? 'linear-gradient(135deg, #f5c842, #e6a817)' : 'rgba(255,255,255,0.06)',
-    border: active ? '2px solid #f5c842' : '1px solid rgba(255,255,255,0.15)',
-    borderRadius: '8px', cursor: 'pointer', color: active ? '#1a1a1a' : '#fff',
-    fontWeight: active ? 'bold' : 'normal', fontSize: '0.9rem', transition: 'all 0.2s',
-  })
+  async function handleDownloadQR() {
+    if (!qrCodeUrl) return
+    try {
+      const response = await fetch(qrCodeUrl)
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `promptpay-qr-${selectedPackage?.price ?? ''}.png`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      // fallback: open in new tab
+      window.open(qrCodeUrl, '_blank')
+    }
+  }
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#0a0a0f', color: '#fff', paddingTop: '80px' }}>
@@ -155,7 +122,7 @@ export default function CoinPage() {
           {COIN_PACKAGES.map((pkg, i) => {
             const selected = selectedPackage?.coins === pkg.coins
             return (
-              <div key={i} onClick={() => setSelectedPackage(pkg)} style={{ background: selected ? 'linear-gradient(135deg, #b8860b, #f5c842)' : 'rgba(255,255,255,0.04)', border: selected ? '2px solid #f5c842' : pkg.tag ? `1px solid ${pkg.tagColor}55` : '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '1.4rem 1rem', cursor: 'pointer', textAlign: 'center', transition: 'all 0.2s', position: 'relative', overflow: 'hidden' }}>
+              <div key={i} onClick={() => { setSelectedPackage(pkg); setQrCodeUrl(null); setChargeId(null); setMsg('') }} style={{ background: selected ? 'linear-gradient(135deg, #b8860b, #f5c842)' : 'rgba(255,255,255,0.04)', border: selected ? '2px solid #f5c842' : pkg.tag ? `1px solid ${pkg.tagColor}55` : '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '1.4rem 1rem', cursor: 'pointer', textAlign: 'center', transition: 'all 0.2s', position: 'relative', overflow: 'hidden' }}>
                 {pkg.tag && <div style={{ position: 'absolute', top: '8px', right: '8px', background: selected ? 'rgba(0,0,0,0.2)' : pkg.tagColor, color: '#fff', fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '20px', whiteSpace: 'nowrap' }}>{pkg.tag}</div>}
                 <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '10px', marginTop: pkg.tag ? '8px' : '0' }}><CoinIcon size={56} /></div>
                 <div style={{ fontWeight: 'bold', color: selected ? '#1a1a1a' : '#f5c842', fontSize: '1.1rem', marginBottom: '4px' }}>{pkg.label}</div>
@@ -169,55 +136,38 @@ export default function CoinPage() {
 
         {/* Payment Form */}
         <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', padding: '1.5rem' }}>
-          <div style={{ marginBottom: '1.2rem' }}>
-            <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', marginBottom: '0.6rem' }}>เลือกวิธีชำระเงิน</div>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button onClick={() => { setPaymentMethod('card'); setQrCodeUrl(null); setChargeId(null) }} style={methodBtnStyle(paymentMethod === 'card')}>💳 บัตรเครดิต</button>
-              <button onClick={() => { setPaymentMethod('promptpay'); setQrCodeUrl(null); setChargeId(null) }} style={methodBtnStyle(paymentMethod === 'promptpay')}>📱 พร้อมเพย์</button>
-              <button onClick={() => { setPaymentMethod('truemoney'); setQrCodeUrl(null); setChargeId(null) }} style={methodBtnStyle(paymentMethod === 'truemoney')}>🍀 TrueMoney</button>
-            </div>
+
+          {/* PromptPay label */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1.2rem' }}>
+            <span style={{ fontSize: '1.3rem' }}>📱</span>
+            <span style={{ fontWeight: 'bold', color: '#f5c842', fontSize: '1rem' }}>ชำระผ่าน PromptPay</span>
           </div>
 
-          {paymentMethod === 'card' && (
-            <div>
-              <input placeholder="ชื่อบนบัตร" value={name} onChange={e => setName(e.target.value)} style={inputStyle} />
-              <input placeholder="หมายเลขบัตร" value={cardNumber} onChange={e => setCardNumber(e.target.value)} style={inputStyle} />
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem', marginBottom: '0.8rem' }}>
-                <input placeholder="MM/YY" value={expiry} onChange={e => setExpiry(e.target.value)} maxLength={5} style={{ ...inputStyle, marginBottom: 0 }} />
-                <input placeholder="CVV" value={cvv} onChange={e => setCvv(e.target.value)} maxLength={4} type="password" style={{ ...inputStyle, marginBottom: 0 }} />
-              </div>
-            </div>
-          )}
-
-          {paymentMethod === 'truemoney' && (
-            <div>
-              <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', marginBottom: '0.6rem' }}>กรอกเบอร์มือถือที่ผูกกับ TrueMoney Wallet</div>
-              <input placeholder="0812345678" value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} maxLength={10} style={inputStyle} />
-            </div>
-          )}
-
-          {paymentMethod === 'promptpay' && qrCodeUrl && (
+          {/* QR Code */}
+          {qrCodeUrl && (
             <div style={{ textAlign: 'center', margin: '1rem 0' }}>
               <div style={{ fontSize: '0.9rem', color: '#f5c842', marginBottom: '0.8rem' }}>สแกน QR Code ด้านล่างด้วยแอปธนาคาร</div>
               <img src={qrCodeUrl} alt="QR Code" style={{ width: '200px', height: '200px', borderRadius: '8px', background: '#fff', padding: '8px' }} />
               {polling && <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', marginTop: '0.5rem' }}>⏳ รอการชำระเงิน...</div>}
+
+              {/* ปุ่มบันทึกรูป */}
+              <div style={{ marginTop: '0.8rem' }}>
+                <button onClick={handleDownloadQR} style={{
+                  background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: '8px', padding: '8px 20px', color: '#fff', cursor: 'pointer',
+                  fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px'
+                }}>
+                  💾 บันทึก QR Code
+                </button>
+              </div>
             </div>
           )}
 
-          {paymentMethod === 'truemoney' && chargeId && (
-            <div style={{ textAlign: 'center', padding: '1rem', background: 'rgba(245,200,66,0.05)', borderRadius: '8px', margin: '1rem 0' }}>
-              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📲</div>
-              <div style={{ color: '#f5c842', fontWeight: 'bold' }}>เปิดแอป TrueMoney Wallet</div>
-              <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.3rem' }}>กด "ยืนยันการชำระเงิน" ในแอป</div>
-              {polling && <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>⏳ รอการยืนยัน...</div>}
-            </div>
-          )}
-
-          {msg && <div style={{ color: msg.startsWith('✅') ? '#2ecc71' : msg.startsWith('📱') || msg.startsWith('📲') ? '#f5c842' : '#ff6b6b', fontSize: '0.9rem', marginBottom: '0.8rem' }}>{msg}</div>}
+          {msg && <div style={{ color: msg.startsWith('✅') ? '#2ecc71' : msg.startsWith('📱') ? '#f5c842' : '#ff6b6b', fontSize: '0.9rem', marginBottom: '0.8rem' }}>{msg}</div>}
 
           {!polling && (
             <button onClick={handlePay} disabled={loading} style={{ width: '100%', padding: '14px', background: loading ? '#555' : 'linear-gradient(135deg, #f5c842, #e6a817)', color: '#1a1a1a', fontWeight: 'bold', fontSize: '1.05rem', border: 'none', borderRadius: '10px', cursor: loading ? 'not-allowed' : 'pointer' }}>
-              {loading ? '⏳ กำลังดำเนินการ...' : `ชำระ ฿${selectedPackage?.price ?? '...'}`}
+              {loading ? '⏳ กำลังสร้าง QR Code...' : `ชำระ ฿${selectedPackage?.price ?? '...'} ผ่าน PromptPay`}
             </button>
           )}
 
