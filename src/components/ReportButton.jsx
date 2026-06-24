@@ -17,6 +17,16 @@ export default function ReportButton() {
       page_url: window.location.href,
       user_id: user?.id || null
     })
+   // ส่ง LINE แจ้งเตือน
+    const typeLabel = { bug: '🐛 บัก', content: '📝 เนื้อหา', suggestion: '💡 ติชม', other: '❓ อื่นๆ' }
+    await fetch('/api/send-line', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: `🚨 Star Novel — แจ้งปัญหาใหม่\nประเภท: ${typeLabel[type]}\nหน้า: ${window.location.pathname}\nข้อความ: ${message}\nผู้ใช้: ${user?.email || 'ไม่ได้ Login'}`
+      })
+    })
+
     setLoading(false)
     setDone(true)
     setMessage('')
