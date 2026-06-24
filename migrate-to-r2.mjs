@@ -3,12 +3,11 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import fetch from 'node-fetch'
 
 const SUPABASE_URL = 'https://lsjphxrlnqxasligrzae.supabase.co'
-const SUPABASE_SERVICE_KEY = 'sb_secret_BrGkQU3FFdCojdbllW7AVQ_--4txqAS'
-const R2_ACCOUNT_ID = 'f2fc439ae103dece7028455c9733db1d'
-const R2_ACCESS_KEY_ID = 'e1c1d5fc3bd76d68b23b2dc7463e997d'
-const R2_SECRET_ACCESS_KEY = '081460b8ca2dc3ddf6b2e4fa8f5f1e7350c1d0f3b10c4430b58200695b66de21'
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY
+const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID
+const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID
+const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY
 const R2_BUCKET = 'star-novel-audio'
-
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 const r2 = new S3Client({
   region: 'auto',

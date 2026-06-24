@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
   'https://lsjphxrlnqxasligrzae.supabase.co',
-  'sb_secret_BrGkQU3FFdCojdbllW7AVQ_--4txqAS'
+  process.env.SUPABASE_SERVICE_KEY
 )
 
 async function deleteAll() {
