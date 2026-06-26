@@ -28,7 +28,7 @@ export default function Categories() {
           <div
             key={cat.id}
             className="cat-tag"
-            onClick={() => navigate(`/category/${cat.id}`)}
+            onClick={() => navigate(`/novels?category=${cat.id}`)}
           >
             {cat.icon || "📚"} {cat.name}
           </div>
