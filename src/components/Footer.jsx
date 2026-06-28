@@ -29,6 +29,26 @@ export default function Footer() {
         <a href="/policy#terms">ข้อตกลง</a>
         <a href="/policy#privacy">ความเป็นส่วนตัว</a>
         <a href="/policy#refund">นโยบายคืนเงิน</a>
+        
+          href="https://line.me/R/ti/p/@896hyozw"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            marginTop: '8px',
+            padding: '6px 14px',
+            backgroundColor: '#06C755',
+            color: '#fff',
+            borderRadius: '20px',
+            fontWeight: 'bold',
+            fontSize: '13px',
+            textDecoration: 'none',
+          }}
+        >
+          💬 แชท Support
+        </a>
       </div>
       <div className="footer-bottom">© 2026 STAR NOVEL · All rights reserved</div>
     </footer>
