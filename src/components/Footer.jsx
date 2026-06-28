@@ -29,8 +29,7 @@ export default function Footer() {
         <a href="/policy#terms">ข้อตกลง</a>
         <a href="/policy#privacy">ความเป็นส่วนตัว</a>
         <a href="/policy#refund">นโยบายคืนเงิน</a>
-        
-          href="https://line.me/R/ti/p/@896hyozw"
+        <a href="https://line.me/R/ti/p/@896hyozw"
           target="_blank"
           rel="noopener noreferrer"
           style={{
