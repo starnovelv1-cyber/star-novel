@@ -5,7 +5,8 @@ const R2_BUCKET = 'star-novel-audio'
 const R2_ACCOUNT_ID = 'f2fc439ae103dece7028455c9733db1d'
 const R2_ACCESS_KEY_ID = 'e1c1d5fc3bd76d68b23b2dc7463e997d'
 const R2_SECRET_ACCESS_KEY = '081460b8ca2dc3ddf6b2e4fa8f5f1e7350c1d0f3b10c4430b58200695b66de21'
-const R2_PUBLIC_URL = 'https://pub-7e8fb90f9cd14ce9aacbd25e34571a05.r2.dev'
+const R2_PUBLIC_URL = 'https://audio.star-novel.com'
+
 
 export default function ChaptersAdmin() {
   const [chapters, setChapters] = useState([])
