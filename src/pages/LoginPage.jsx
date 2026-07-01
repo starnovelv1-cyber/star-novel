@@ -22,12 +22,12 @@ export default function LoginPage() {
     }
   };
 
-  const handleGoogleLogin = async () => {
+    const handleGoogleLogin = async () => {
     await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: "https://star-novel.vercel.app" },
-    });
-  };
+    provider: "google",
+    options: { redirectTo: "https://star-novel.com" },
+  });
+ };
 
   return (
     <div style={{
